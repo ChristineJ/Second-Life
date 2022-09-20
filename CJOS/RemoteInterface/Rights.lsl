@@ -36,6 +36,26 @@ key kRequestingAvatar;
 
 list lFolders;
 
+
+interaction(key kAvatar){
+    string sName = llGetUsername(kAvatar);
+    string sNameShorthand = llGetSubString(sName,0,10);
+    integer iRights = rights(kAvatar);
+    if(iRights == RIGHT_NONE){
+        
+        kRequestingAvatar = kAvatar;
+        
+        llListenRemove(iOwnerDialogHandle);
+        iOwnerDialogHandle = llListen(iOwnerDialogChannel,"",llGetOwner(),"");
+        iOwnerDialogTil = llGetUnixTime() + 600;
+        
+        llDialog(llGetOwner(),sName+" requests access",["Ban (Temp)   "+sNameShorthand," ","Ban (Perm)   "+sNameShorthand,"Add (Temp)   "+sNameShorthand," ","Add (Perm)   "+sNameShorthand],iOwnerDialogChannel);
+    }else if(iRights == RIGHT_ADMIN || iRights == RIGHT_OPERATOR){
+        sendRemoteDialog(kAvatar);
+    }
+
+}
+
 openOperatorListen(){
     llListenRemove(iOperatorDialogHandle);
     iOperatorDialogHandle = llListen(iOperatorChannel,"",NULL_KEY,"");
@@ -118,7 +138,10 @@ default
             if(iResponseCode == 2000){
                 lFolders = llList2List(cmd,2,-1);
                 showRemoteDialog();
-                
+            }
+            else if(iResponseCode == 1){
+                key kRequestingAvatar = llList2Key(cmd, 2);
+                interaction(kRequestingAvatar);
             }
         }
         else if(channel == iOperatorChannel)
@@ -186,22 +209,7 @@ default
 
     touch_start(integer total_number)
     {
-        //llRegionSayTo(llGetOwner(),iChannel, "CJOS_REMOTE#1000");
         key kAvatar = llDetectedKey(0);
-        string sName = llGetUsername(kAvatar);
-        string sNameShorthand = llGetSubString(sName,0,10);
-        integer iRights = rights(kAvatar);
-        if(iRights == RIGHT_NONE){
-            
-            kRequestingAvatar = kAvatar;
-            
-            llListenRemove(iOwnerDialogHandle);
-            iOwnerDialogHandle = llListen(iOwnerDialogChannel,"",llGetOwner(),"");
-            iOwnerDialogTil = llGetUnixTime() + 600;
-            
-            llDialog(llGetOwner(),sName+" requests access",["Ban (Temp)   "+sNameShorthand," ","Ban (Perm)   "+sNameShorthand,"Add (Temp)   "+sNameShorthand," ","Add (Perm)   "+sNameShorthand],iOwnerDialogChannel);
-        }else if(iRights == RIGHT_ADMIN || iRights == RIGHT_OPERATOR){
-            sendRemoteDialog(kAvatar);
-        }
+        interaction(kAvatar);
     }
 }
